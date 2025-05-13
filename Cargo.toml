@@ -4,3 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+reqwest-middleware = "0.4"
+async-trait = "0.1"
+metrics = "0.24"
+http = "1"
+
+
+[dev-dependencies]
+wiremock = "0.6"
+tokio = { version = "1", features = ["full"] }
+metrics-util = "0.19.1"
+insta = { version = "1.43", features = ["filters"]}
+metrics-exporter-prometheus = "0.17.0"
