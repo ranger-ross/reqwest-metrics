@@ -56,6 +56,8 @@ impl Middleware for MetricsMiddleware {
     ) -> Result<Response> {
         let client_name = client_name(&req);
         let method = method(&req);
+        let host = host(&req);
+        let port = port(&req);
         let uri = uri(&req);
 
         let start = SystemTime::now();
@@ -69,6 +71,14 @@ impl Middleware for MetricsMiddleware {
             ("method", method),
             ("outcome", Cow::Borrowed(outcome)),
         ];
+
+        if let Some(host) = host {
+            labels.push(("host", Cow::Owned(host)));
+        }
+
+        if let Some(port) = port {
+            labels.push(("port", Cow::Owned(port.to_string())));
+        }
 
         if let Some(status) = status(&res) {
             labels.push(("status", status));
@@ -111,6 +121,14 @@ fn uri(req: &Request) -> String {
     } else {
         path.to_string()
     };
+}
+
+fn host(req: &Request) -> Option<String> {
+    req.url().host().map(|h| h.to_string())
+}
+
+fn port(req: &Request) -> Option<u16> {
+    req.url().port_or_known_default()
 }
 
 fn status(res: &Result<Response>) -> Option<Cow<'static, str>> {
