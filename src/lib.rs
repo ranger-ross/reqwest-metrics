@@ -63,16 +63,23 @@ impl Middleware for MetricsMiddleware {
         let duration = SystemTime::now().duration_since(start).unwrap();
 
         let outcome = outcome(&res);
-        let status = status(&res);
 
-        histogram!("http_client_requests_seconds",
-            "method" => method,
-            "client_name" => client_name,
-            "outcome" => outcome,
-            "uri" => uri,
-            "status" => status
-        )
-        .record(duration.as_millis() as f64 / 1000.0);
+        let mut labels = vec![
+            ("client_name", Cow::Owned(client_name)),
+            ("method", method),
+            ("outcome", Cow::Borrowed(outcome)),
+        ];
+
+        if let Some(status) = status(&res) {
+            labels.push(("status", status));
+        }
+
+        if self.enable_uri {
+            labels.push(("uri", Cow::Owned(uri)));
+        }
+
+        histogram!("http_client_requests_seconds", &labels)
+            .record(duration.as_millis() as f64 / 1000.0);
 
         res
     }
@@ -106,12 +113,11 @@ fn uri(req: &Request) -> String {
     };
 }
 
-fn status(res: &Result<Response>) -> Cow<'static, str> {
-    let status = res.as_ref().map(|r| r.status().as_u16()).ok();
-    return match status {
-        Some(s) => Cow::Owned(s.to_string()),
-        None => Cow::Borrowed("UNKNOWN"),
-    };
+fn status(res: &Result<Response>) -> Option<Cow<'static, str>> {
+    return res
+        .as_ref()
+        .map(|r| Cow::Owned(r.status().as_u16().to_string()))
+        .ok();
 }
 
 fn outcome(res: &Result<Response>) -> &'static str {
