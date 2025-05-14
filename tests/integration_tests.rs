@@ -51,6 +51,33 @@ async fn basic() {
 }
 
 #[test]
+async fn enable_uri() {
+    let snapshotter = install_debug_recorder();
+
+    let client = ClientBuilder::new(reqwest::Client::new())
+        .with(MetricsMiddlewareBuilder::new().enable_uri().build())
+        .build();
+
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/hello"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&mock_server)
+        .await;
+
+    let url = mock_server.uri();
+
+    let res = client.get(format!("{url}/hello")).send().await.unwrap();
+    assert_eq!(200, res.status().as_u16());
+
+    let snapshot = snapshotter.snapshot();
+    insta::with_settings!({filters => SNAPSHOT_FILTERS}, {
+        insta::assert_debug_snapshot!(snapshot);
+    });
+}
+
+#[test]
 async fn custom_labels() {
     let snapshotter = install_debug_recorder();
 
