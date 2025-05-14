@@ -1,0 +1,54 @@
+---
+source: tests/integration_tests.rs
+expression: snapshot
+---
+Snapshot(
+    [
+        (
+            CompositeKey(
+                Histogram,
+                Key {
+                    name: KeyName(
+                        "http_client_requests_seconds",
+                    ),
+                    labels: [
+                        Label(
+                            "my_host",
+                            "127.0.0.1",
+                        ),
+                        Label(
+                            "my_method",
+                            "GET",
+                        ),
+                        Label(
+                            "my_outcome",
+                            "SUCCESS",
+                        ),
+                        Label(
+                            "my_scheme",
+                            "http",
+                        ),
+                        Label(
+                            "my_host",
+                            "127.0.0.1",
+                        ),
+                        Label("my_port", [PORT]),
+                        Label(
+                            "my_status",
+                            "200",
+                        ),
+                        Label(
+                            "my_uri",
+                            "/hello",
+                        ),
+                    ],
+                    hashed: true,
+                    hash: [HASH],
+                },
+            ),
+            None,
+            None,
+            Histogram([HISTOGRAM_VALUE]),
+        ),
+    ],
+)
