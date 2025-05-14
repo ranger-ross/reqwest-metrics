@@ -7,14 +7,54 @@ use reqwest_middleware::{
     reqwest::{Request, Response},
 };
 
+const CLIENT_NAME: &str = "client_name";
+const METHOD: &str = "method";
+const OUTCOME: &str = "outcome";
+const SCHEME: &str = "scheme";
+const HOST: &str = "host";
+const PORT: &str = "port";
+const STATUS: &str = "status";
+const URI: &str = "uri";
+
 #[derive(Debug, Clone)]
 pub struct MetricsMiddleware {
     enable_uri: bool,
+    label_names: LabelNames,
 }
 
 impl MetricsMiddleware {
     pub fn new() -> Self {
-        Self { enable_uri: false }
+        Self {
+            enable_uri: false,
+            label_names: LabelNames::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct LabelNames {
+    client_name: String,
+    method: String,
+    outcome: String,
+    scheme: String,
+    host: String,
+    port: String,
+    status: String,
+    uri: String,
+}
+
+impl Default for LabelNames {
+    fn default() -> Self {
+        Self {
+            client_name: CLIENT_NAME.to_string(),
+            method: METHOD.to_string(),
+            outcome: OUTCOME.to_string(),
+            scheme: SCHEME.to_string(),
+            host: HOST.to_string(),
+            port: PORT.to_string(),
+            status: STATUS.to_string(),
+            uri: URI.to_string(),
+        }
     }
 }
 
@@ -27,11 +67,55 @@ impl Default for MetricsMiddleware {
 #[derive(Debug, Clone)]
 pub struct MetricsMiddlewareBuilder {
     enable_uri: bool,
+    label_names: LabelNames,
 }
 
 impl MetricsMiddlewareBuilder {
     pub fn new() -> Self {
-        Self { enable_uri: false }
+        Self {
+            enable_uri: false,
+            label_names: LabelNames::default(),
+        }
+    }
+
+    pub fn client_name_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
+        self.label_names.client_name = label.into();
+        self
+    }
+
+    pub fn method_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
+        self.label_names.method = label.into();
+        self
+    }
+
+    pub fn outcome_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
+        self.label_names.outcome = label.into();
+        self
+    }
+
+    pub fn scheme_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
+        self.label_names.scheme = label.into();
+        self
+    }
+
+    pub fn host_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
+        self.label_names.host = label.into();
+        self
+    }
+
+    pub fn port_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
+        self.label_names.port = label.into();
+        self
+    }
+
+    pub fn status_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
+        self.label_names.status = label.into();
+        self
+    }
+
+    pub fn uri_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
+        self.label_names.uri = label.into();
+        self
     }
 
     pub fn enable_uri(&mut self) -> &mut Self {
@@ -42,6 +126,7 @@ impl MetricsMiddlewareBuilder {
     pub fn build(&self) -> MetricsMiddleware {
         MetricsMiddleware {
             enable_uri: self.enable_uri,
+            label_names: self.label_names.clone(),
         }
     }
 }
@@ -68,26 +153,32 @@ impl Middleware for MetricsMiddleware {
         let outcome = outcome(&res);
 
         let mut labels = vec![
-            ("client_name", Cow::Owned(client_name)),
-            ("method", method),
-            ("outcome", Cow::Borrowed(outcome)),
-            ("scheme", scheme),
+            (
+                self.label_names.client_name.clone(),
+                Cow::Owned(client_name),
+            ),
+            (self.label_names.method.to_string(), method),
+            (self.label_names.outcome.to_string(), Cow::Borrowed(outcome)),
+            (self.label_names.scheme.to_string(), scheme),
         ];
 
         if let Some(host) = host {
-            labels.push(("host", Cow::Owned(host)));
+            labels.push((self.label_names.host.to_string(), Cow::Owned(host)));
         }
 
         if let Some(port) = port {
-            labels.push(("port", Cow::Owned(port.to_string())));
+            labels.push((
+                self.label_names.port.to_string(),
+                Cow::Owned(port.to_string()),
+            ));
         }
 
         if let Some(status) = status(&res) {
-            labels.push(("status", status));
+            labels.push((self.label_names.status.to_string(), status));
         }
 
         if self.enable_uri {
-            labels.push(("uri", Cow::Owned(uri)));
+            labels.push((self.label_names.uri.to_string(), Cow::Owned(uri)));
         }
 
         histogram!("http_client_requests_seconds", &labels)
