@@ -56,6 +56,7 @@ impl Middleware for MetricsMiddleware {
     ) -> Result<Response> {
         let client_name = client_name(&req);
         let method = method(&req);
+        let scheme = scheme(&req);
         let host = host(&req);
         let port = port(&req);
         let uri = uri(&req);
@@ -70,6 +71,7 @@ impl Middleware for MetricsMiddleware {
             ("client_name", Cow::Owned(client_name)),
             ("method", method),
             ("outcome", Cow::Borrowed(outcome)),
+            ("scheme", scheme),
         ];
 
         if let Some(host) = host {
@@ -111,6 +113,14 @@ fn method(req: &Request) -> Cow<'static, str> {
         &Method::PATCH => Cow::Borrowed("PATCH"),
         &Method::TRACE => Cow::Borrowed("TRACE"),
         method => Cow::Owned(method.as_str().to_string()),
+    }
+}
+
+fn scheme(req: &Request) -> Cow<'static, str> {
+    match req.url().scheme() {
+        "http" => Cow::Borrowed("http"),
+        "https" => Cow::Borrowed("https"),
+        s => Cow::Owned(s.to_string()),
     }
 }
 
