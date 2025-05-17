@@ -1,7 +1,12 @@
 [package]
 name = "reqwest-metrics"
 version = "0.1.0"
-edition = "2024"
+authors = ["Ross Sullivan <rosssullivan101@gmail.com>"]
+edition = "2021"
+repository = "https://github.com/ranger-ross/reqwest-metrics.git"
+license = "MIT"
+readme = "README.md"
+exclude = [".gitignore", ".github/", "examples/"]
 
 [dependencies]
 reqwest-middleware = "0.4"
