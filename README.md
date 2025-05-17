@@ -9,9 +9,8 @@
 
 ## Features 
 
-* `http_client_requests_seconds` metric (histogram)
+* Adheres to [Open Telemetry HTTP Client Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#http-client)
 * Customizable labels
-* Ability enable/disable high cardinality meteric labels like `uri`
 
 # Usage
 
@@ -29,34 +28,25 @@ let client = ClientBuilder::new(reqwest::Client::new())
 let client = ClientBuilder::new(reqwest::Client::new())
     .with(
         MetricsMiddleware::builder()
-            .method_label("http_request_method")
-            .status_label("http_response_status")
-            .host_label("http_request_host")
+            .http_request_method_label("method")
+            .http_response_status_label("status")
+            .server_address_label("host")
             .build(),
     )
     .build();
 ```
 
 Full list of labels:
-* `method`
-* `outcome`
-* `scheme`
-* `host`
-* `port`
-* `status`
-* `uri` (disabled by default)
-
-### Enabling `uri` label
-
-
-```rust
-let client = ClientBuilder::new(reqwest::Client::new())
-    .with(MetricsMiddleware::builder().enable_uri().build())
-    .build();
-
-```
+* `http_request_method`
+* `server_address`
+* `server_port`
+* `error_type`
+* `http_response_status_code`
+* `network_protocol_name`
+* `network_protocol_version`
+* `url_scheme`
 
 ## Motivation
 
-This crate is heavily inspired by the [HTTP Client metrics](https://docs.spring.io/spring-boot/reference/actuator/metrics.html#actuator.metrics.supported.http-clients) provided by Spring. This crate aims to provide the same functionality (although some configuration is required)
+This crate is heavily inspired by the [HTTP Client metrics](https://docs.spring.io/spring-boot/reference/actuator/metrics.html#actuator.metrics.supported.http-clients) provided by Spring. This crate aims to provide the same functionality while adhereing to Otel semantic conventions.
 
