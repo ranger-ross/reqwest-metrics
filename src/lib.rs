@@ -184,6 +184,12 @@ impl MetricsMiddlewareBuilder {
     }
 }
 
+impl Default for MetricsMiddlewareBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[async_trait::async_trait]
 impl Middleware for MetricsMiddleware {
     async fn handle(
@@ -282,10 +288,9 @@ fn server_port(req: &Request) -> Option<u16> {
 }
 
 fn http_response_status(res: &Result<Response>) -> Option<Cow<'static, str>> {
-    return res
-        .as_ref()
+    res.as_ref()
         .map(|r| Cow::Owned(r.status().as_u16().to_string()))
-        .ok();
+        .ok()
 }
 
 fn error_type(res: &Result<Response>) -> Option<Cow<'static, str>> {
