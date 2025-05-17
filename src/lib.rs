@@ -1,10 +1,18 @@
+/*!
+[Metrics.rs](https://docs.rs/metrics/latest/metrics/) integration for [reqwest](https://docs.rs/reqwest/latest/reqwest/) using [reqwest-middleware](https://docs.rs/reqwest-middleware/latest/reqwest_middleware/)
+
+
+*/
+
+#![deny(missing_docs)]
+
 use std::{borrow::Cow, time::SystemTime};
 
 use http::{Extensions, Method};
 use metrics::histogram;
 use reqwest_middleware::{
-    Middleware, Next, Result,
     reqwest::{Request, Response},
+    Middleware, Next, Result,
 };
 
 const CLIENT_NAME: &str = "client_name";
@@ -16,6 +24,7 @@ const PORT: &str = "port";
 const STATUS: &str = "status";
 const URI: &str = "uri";
 
+/// Middleware to handle emitting HTTP metrics for a reqwest client
 #[derive(Debug, Clone)]
 pub struct MetricsMiddleware {
     enable_uri: bool,
@@ -23,6 +32,7 @@ pub struct MetricsMiddleware {
 }
 
 impl MetricsMiddleware {
+    /// Create a new [`MetricsMiddleware`] with default labels. (`uri` label is disabled by default)
     pub fn new() -> Self {
         Self {
             enable_uri: false,
@@ -64,6 +74,7 @@ impl Default for MetricsMiddleware {
     }
 }
 
+/// Builder for [`MetricsMiddleware`]
 #[derive(Debug, Clone)]
 pub struct MetricsMiddlewareBuilder {
     enable_uri: bool,
@@ -71,6 +82,7 @@ pub struct MetricsMiddlewareBuilder {
 }
 
 impl MetricsMiddlewareBuilder {
+    /// Create a new [`MetricsMiddlewareBuilder`]
     pub fn new() -> Self {
         Self {
             enable_uri: false,
@@ -78,51 +90,63 @@ impl MetricsMiddlewareBuilder {
         }
     }
 
+    /// Rename the `client_name` label.
     pub fn client_name_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
         self.label_names.client_name = label.into();
         self
     }
 
+    /// Rename the `method` label.
     pub fn method_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
         self.label_names.method = label.into();
         self
     }
 
+    /// Rename the `outcome` label.
     pub fn outcome_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
         self.label_names.outcome = label.into();
         self
     }
 
+    /// Rename the `scheme` label.
     pub fn scheme_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
         self.label_names.scheme = label.into();
         self
     }
 
+    /// Rename the `host` label.
     pub fn host_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
         self.label_names.host = label.into();
         self
     }
 
+    /// Rename the `port` label.
     pub fn port_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
         self.label_names.port = label.into();
         self
     }
 
+    /// Rename the `status` label.
     pub fn status_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
         self.label_names.status = label.into();
         self
     }
 
+    /// Rename the `uri` label.
     pub fn uri_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
         self.label_names.uri = label.into();
         self
     }
 
+    /// Enable `uri` label in metrics.
+    ///
+    /// <div class="warning"> WARNING: Enabling URIs can lead to high cardinality metrics.</div>
     pub fn enable_uri(&mut self) -> &mut Self {
         self.enable_uri = true;
         self
     }
 
+    /// Builds a [`MetricsMiddleware`]
     pub fn build(&self) -> MetricsMiddleware {
         MetricsMiddleware {
             enable_uri: self.enable_uri,
