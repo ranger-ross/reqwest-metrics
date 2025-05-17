@@ -56,7 +56,7 @@ This crate is heavily inspired by the [HTTP Client metrics](https://docs.spring.
 use std::{borrow::Cow, time::Instant};
 
 use http::{Extensions, Method};
-use metrics::histogram;
+use metrics::{describe_histogram, histogram, Unit};
 use reqwest_middleware::{
     reqwest::{Request, Response},
     Error, Middleware, Next, Result,
@@ -76,17 +76,25 @@ const NETWORK_PROTOCOL_VERSION: &str = "network.protocol.version";
 const URL_SCHEME: &str = "url.scheme";
 
 /// Middleware to handle emitting HTTP metrics for a reqwest client
+/// NOTE: Creating a `[MetricMiddleware]` will describe a histgram on construction.
 #[derive(Debug, Clone)]
 pub struct MetricsMiddleware {
     label_names: LabelNames,
 }
 
 impl MetricsMiddleware {
-    /// Create a new [`MetricsMiddleware`] with default labels. (`uri` label is disabled by default)
+    /// Create a new [`MetricsMiddleware`] with default labels.
     pub fn new() -> Self {
-        Self {
-            label_names: LabelNames::default(),
-        }
+        Self::new_inner(LabelNames::default())
+    }
+
+    fn new_inner(label_names: LabelNames) -> Self {
+        describe_histogram!(
+            HTTP_CLIENT_REQUEST_DURATION,
+            Unit::Seconds,
+            "Duration of HTTP client requests."
+        );
+        Self { label_names }
     }
 
     /// Create a new [`MetricsMiddlewareBuilder`] to create a customized [`MetricsMiddleware`]
@@ -182,9 +190,7 @@ impl MetricsMiddlewareBuilder {
 
     /// Builds a [`MetricsMiddleware`]
     pub fn build(&self) -> MetricsMiddleware {
-        MetricsMiddleware {
-            label_names: self.label_names.clone(),
-        }
+        MetricsMiddleware::new_inner(self.label_names.clone())
     }
 }
 

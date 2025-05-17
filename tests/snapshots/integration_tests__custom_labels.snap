@@ -42,8 +42,12 @@ Snapshot(
                     hash: [HASH],
                 },
             ),
-            None,
-            None,
+            Some(
+                Seconds,
+            ),
+            Some(
+                "Duration of HTTP client requests.",
+            ),
             Histogram([HISTOGRAM_VALUE]),
         ),
     ],
