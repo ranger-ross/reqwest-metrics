@@ -13,10 +13,6 @@ Snapshot(
                     ),
                     labels: [
                         Label(
-                            "client_name",
-                            "127.0.0.1",
-                        ),
-                        Label(
                             "method",
                             "GET",
                         ),

@@ -23,16 +23,15 @@ let client = ClientBuilder::new(reqwest::Client::new())
 let client = ClientBuilder::new(reqwest::Client::new())
     .with(
         MetricsMiddleware::builder()
-            .client_name_label("custom_client_name")
             .method_label("http_request_method")
             .status_label("http_response_status")
+            .host_label("http_request_host")
             .build(),
     )
     .build();
 ```
 
 Full list of labels:
-* `client_name`
 * `method`
 * `outcome`
 * `scheme`
@@ -68,7 +67,6 @@ use reqwest_middleware::{
     Middleware, Next, Result,
 };
 
-const CLIENT_NAME: &str = "client_name";
 const METHOD: &str = "method";
 const OUTCOME: &str = "outcome";
 const SCHEME: &str = "scheme";
@@ -101,7 +99,6 @@ impl MetricsMiddleware {
 
 #[derive(Debug, Clone)]
 struct LabelNames {
-    client_name: String,
     method: String,
     outcome: String,
     scheme: String,
@@ -114,7 +111,6 @@ struct LabelNames {
 impl Default for LabelNames {
     fn default() -> Self {
         Self {
-            client_name: CLIENT_NAME.to_string(),
             method: METHOD.to_string(),
             outcome: OUTCOME.to_string(),
             scheme: SCHEME.to_string(),
@@ -146,12 +142,6 @@ impl MetricsMiddlewareBuilder {
             enable_uri: false,
             label_names: LabelNames::default(),
         }
-    }
-
-    /// Rename the `client_name` label.
-    pub fn client_name_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
-        self.label_names.client_name = label.into();
-        self
     }
 
     /// Rename the `method` label.
@@ -221,7 +211,6 @@ impl Middleware for MetricsMiddleware {
         extensions: &mut Extensions,
         next: Next<'_>,
     ) -> Result<Response> {
-        let client_name = client_name(&req);
         let method = method(&req);
         let scheme = scheme(&req);
         let host = host(&req);
@@ -235,10 +224,6 @@ impl Middleware for MetricsMiddleware {
         let outcome = outcome(&res);
 
         let mut labels = vec![
-            (
-                self.label_names.client_name.clone(),
-                Cow::Owned(client_name),
-            ),
             (self.label_names.method.to_string(), method),
             (self.label_names.outcome.to_string(), Cow::Borrowed(outcome)),
             (self.label_names.scheme.to_string(), scheme),
@@ -268,10 +253,6 @@ impl Middleware for MetricsMiddleware {
 
         res
     }
-}
-
-fn client_name(req: &Request) -> String {
-    return req.url().host_str().map(str::to_string).unwrap_or_default();
 }
 
 fn method(req: &Request) -> Cow<'static, str> {

@@ -1,10 +1,10 @@
 use metrics_util::debugging::{DebuggingRecorder, Snapshotter};
 use reqwest_metrics::{MetricsMiddleware, MetricsMiddlewareBuilder};
-use reqwest_middleware::{ClientBuilder, reqwest};
+use reqwest_middleware::{reqwest, ClientBuilder};
 use tokio::test;
 use wiremock::{
-    Mock, MockServer, ResponseTemplate,
     matchers::{method, path},
+    Mock, MockServer, ResponseTemplate,
 };
 
 const SNAPSHOT_FILTERS: [(&'static str, &'static str); 4] = [
@@ -84,7 +84,6 @@ async fn custom_labels() {
     let client = ClientBuilder::new(reqwest::Client::new())
         .with(
             MetricsMiddlewareBuilder::new()
-                .client_name_label("my_host")
                 .method_label("my_method")
                 .status_label("my_status")
                 .scheme_label("my_scheme")
