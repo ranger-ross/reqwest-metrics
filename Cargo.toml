@@ -21,3 +21,4 @@ tokio = { version = "1", features = ["full"] }
 metrics-util = "0.19.1"
 insta = { version = "1.43", features = ["filters"]}
 metrics-exporter-prometheus = "0.17.0"
+reqwest = "0.12"
