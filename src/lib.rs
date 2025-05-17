@@ -40,16 +40,6 @@ Full list of labels:
 * `status`
 * `uri` (disabled by default)
 
-### Enabling `uri` label
-
-
-```rust
-let client = ClientBuilder::new(reqwest::Client::new())
-    .with(MetricsMiddleware::builder().enable_uri().build())
-    .build();
-
-```
-
 ## Motivation
 
 This crate is heavily inspired by the [HTTP Client metrics](https://docs.spring.io/spring-boot/reference/actuator/metrics.html#actuator.metrics.supported.http-clients) provided by Spring. This crate aims to provide the same functionality (although some configuration is required)
@@ -64,21 +54,25 @@ use http::{Extensions, Method};
 use metrics::histogram;
 use reqwest_middleware::{
     reqwest::{Request, Response},
-    Middleware, Next, Result,
+    Error, Middleware, Next, Result,
 };
 
-const METHOD: &str = "method";
-const OUTCOME: &str = "outcome";
-const SCHEME: &str = "scheme";
-const HOST: &str = "host";
-const PORT: &str = "port";
-const STATUS: &str = "status";
-const URI: &str = "uri";
+// Defaults should follow Open Telemetry when possible
+// https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#http-client
+const HTTP_CLIENT_REQUEST_DURATION: &str = "http.client.request.duration";
+// Labels
+const HTTP_REQUEST_METHOD: &str = "http.request.method";
+const SERVER_ADDRESS: &str = "server.address";
+const SERVER_PORT: &str = "server.port";
+const ERROR_TYPE: &str = "error.type";
+const HTTP_RESPONSE_STATUS_CODE: &str = "http.response.status_code";
+const NETWORK_PROTOCOL_NAME: &str = "network.protocol.name";
+const NETWORK_PROTOCOL_VERSION: &str = "network.protocol.version";
+const URL_SCHEME: &str = "url.scheme";
 
 /// Middleware to handle emitting HTTP metrics for a reqwest client
 #[derive(Debug, Clone)]
 pub struct MetricsMiddleware {
-    enable_uri: bool,
     label_names: LabelNames,
 }
 
@@ -86,7 +80,6 @@ impl MetricsMiddleware {
     /// Create a new [`MetricsMiddleware`] with default labels. (`uri` label is disabled by default)
     pub fn new() -> Self {
         Self {
-            enable_uri: false,
             label_names: LabelNames::default(),
         }
     }
@@ -99,25 +92,27 @@ impl MetricsMiddleware {
 
 #[derive(Debug, Clone)]
 struct LabelNames {
-    method: String,
-    outcome: String,
-    scheme: String,
-    host: String,
-    port: String,
-    status: String,
-    uri: String,
+    http_request_method: String,
+    server_address: String,
+    server_port: String,
+    error_type: String,
+    http_response_status: String,
+    network_protocol_name: String,
+    network_protocol_version: String,
+    url_scheme: String,
 }
 
 impl Default for LabelNames {
     fn default() -> Self {
         Self {
-            method: METHOD.to_string(),
-            outcome: OUTCOME.to_string(),
-            scheme: SCHEME.to_string(),
-            host: HOST.to_string(),
-            port: PORT.to_string(),
-            status: STATUS.to_string(),
-            uri: URI.to_string(),
+            http_request_method: HTTP_REQUEST_METHOD.to_string(),
+            server_address: SERVER_ADDRESS.to_string(),
+            server_port: SERVER_PORT.to_string(),
+            error_type: ERROR_TYPE.to_string(),
+            http_response_status: HTTP_RESPONSE_STATUS_CODE.to_string(),
+            network_protocol_name: NETWORK_PROTOCOL_NAME.to_string(),
+            network_protocol_version: NETWORK_PROTOCOL_VERSION.to_string(),
+            url_scheme: URL_SCHEME.to_string(),
         }
     }
 }
@@ -131,73 +126,58 @@ impl Default for MetricsMiddleware {
 /// Builder for [`MetricsMiddleware`]
 #[derive(Debug, Clone)]
 pub struct MetricsMiddlewareBuilder {
-    enable_uri: bool,
     label_names: LabelNames,
 }
 
+macro_rules! label_setters {
+    // Match one or more method definitions
+    (
+        $(
+            // For each definition, capture the method name, field name, and doc comment
+            $(#[$attr:meta])*
+            $method_name:ident, $field_name:ident
+        );+
+        $(;)?
+    ) => {
+        $(
+            $(#[$attr])*
+            pub fn $method_name<T: Into<String>>(&mut self, label: T) -> &mut Self {
+                self.label_names.$field_name = label.into();
+                self
+            }
+        )+
+    };
+}
 impl MetricsMiddlewareBuilder {
     /// Create a new [`MetricsMiddlewareBuilder`]
     pub fn new() -> Self {
         Self {
-            enable_uri: false,
             label_names: LabelNames::default(),
         }
     }
 
-    /// Rename the `method` label.
-    pub fn method_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
-        self.label_names.method = label.into();
-        self
-    }
-
-    /// Rename the `outcome` label.
-    pub fn outcome_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
-        self.label_names.outcome = label.into();
-        self
-    }
-
-    /// Rename the `scheme` label.
-    pub fn scheme_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
-        self.label_names.scheme = label.into();
-        self
-    }
-
-    /// Rename the `host` label.
-    pub fn host_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
-        self.label_names.host = label.into();
-        self
-    }
-
-    /// Rename the `port` label.
-    pub fn port_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
-        self.label_names.port = label.into();
-        self
-    }
-
-    /// Rename the `status` label.
-    pub fn status_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
-        self.label_names.status = label.into();
-        self
-    }
-
-    /// Rename the `uri` label.
-    pub fn uri_label<T: Into<String>>(&mut self, label: T) -> &mut Self {
-        self.label_names.uri = label.into();
-        self
-    }
-
-    /// Enable `uri` label in metrics.
-    ///
-    /// <div class="warning"> WARNING: Enabling URIs can lead to high cardinality metrics.</div>
-    pub fn enable_uri(&mut self) -> &mut Self {
-        self.enable_uri = true;
-        self
+    label_setters! {
+        /// Rename the `http.request.method` label.
+        http_request_method_label, http_request_method;
+        /// Rename the `server.address` label.
+        server_address_label, server_address;
+        /// Rename the `server.port` label.
+        server_port_label, server_port;
+        /// Rename the `error.type` label.
+        error_type_label, error_type;
+        /// Rename the `http.response.status` label.
+        http_response_status_label, http_response_status;
+        /// Rename the `network.protocol.name` label.
+        network_protocol_name_label, network_protocol_name;
+        /// Rename the `network.protocol.version` label.
+        network_protocol_version_label, network_protocol_name;
+        /// Rename the `url.scheme` label.
+        url_scheme_label, url_scheme
     }
 
     /// Builds a [`MetricsMiddleware`]
     pub fn build(&self) -> MetricsMiddleware {
         MetricsMiddleware {
-            enable_uri: self.enable_uri,
             label_names: self.label_names.clone(),
         }
     }
@@ -211,51 +191,65 @@ impl Middleware for MetricsMiddleware {
         extensions: &mut Extensions,
         next: Next<'_>,
     ) -> Result<Response> {
-        let method = method(&req);
-        let scheme = scheme(&req);
-        let host = host(&req);
-        let port = port(&req);
-        let uri = uri(&req);
+        let http_request_method = http_request_method(&req);
+        let url_scheme = url_scheme(&req);
+        let server_address = server_address(&req);
+        let server_port = server_port(&req);
+        let network_protocol_version = network_protocol_version(&req);
 
         let start = Instant::now();
         let res = next.run(req, extensions).await;
         let duration = start.elapsed();
 
-        let outcome = outcome(&res);
-
         let mut labels = vec![
-            (self.label_names.method.to_string(), method),
-            (self.label_names.outcome.to_string(), Cow::Borrowed(outcome)),
-            (self.label_names.scheme.to_string(), scheme),
+            (
+                self.label_names.http_request_method.to_string(),
+                http_request_method,
+            ),
+            (self.label_names.url_scheme.to_string(), url_scheme),
+            (
+                self.label_names.network_protocol_name.to_string(),
+                Cow::Borrowed("http"),
+            ),
         ];
 
-        if let Some(host) = host {
-            labels.push((self.label_names.host.to_string(), Cow::Owned(host)));
+        if let Some(server_address) = server_address {
+            labels.push((
+                self.label_names.server_address.to_string(),
+                Cow::Owned(server_address),
+            ));
         }
 
-        if let Some(port) = port {
+        if let Some(port) = server_port {
             labels.push((
-                self.label_names.port.to_string(),
+                self.label_names.server_port.to_string(),
                 Cow::Owned(port.to_string()),
             ));
         }
 
-        if let Some(status) = status(&res) {
-            labels.push((self.label_names.status.to_string(), status));
+        if let Some(network_protocol_version) = network_protocol_version {
+            labels.push((
+                self.label_names.network_protocol_version.to_string(),
+                Cow::Borrowed(network_protocol_version),
+            ));
         }
 
-        if self.enable_uri {
-            labels.push((self.label_names.uri.to_string(), Cow::Owned(uri)));
+        if let Some(status) = http_response_status(&res) {
+            labels.push((self.label_names.http_response_status.to_string(), status));
         }
 
-        histogram!("http_client_requests_seconds", &labels)
+        if let Some(error) = error_type(&res) {
+            labels.push((self.label_names.error_type.to_string(), error));
+        }
+
+        histogram!(HTTP_CLIENT_REQUEST_DURATION, &labels)
             .record(duration.as_millis() as f64 / 1000.0);
 
         res
     }
 }
 
-fn method(req: &Request) -> Cow<'static, str> {
+fn http_request_method(req: &Request) -> Cow<'static, str> {
     match req.method() {
         &Method::GET => Cow::Borrowed("GET"),
         &Method::POST => Cow::Borrowed("POST"),
@@ -270,7 +264,7 @@ fn method(req: &Request) -> Cow<'static, str> {
     }
 }
 
-fn scheme(req: &Request) -> Cow<'static, str> {
+fn url_scheme(req: &Request) -> Cow<'static, str> {
     match req.url().scheme() {
         "http" => Cow::Borrowed("http"),
         "https" => Cow::Borrowed("https"),
@@ -278,40 +272,41 @@ fn scheme(req: &Request) -> Cow<'static, str> {
     }
 }
 
-fn uri(req: &Request) -> String {
-    let path = req.url().path();
-    return if let Some(query) = req.url().query() {
-        format!("{path}?{query}")
-    } else {
-        path.to_string()
-    };
-}
-
-fn host(req: &Request) -> Option<String> {
+fn server_address(req: &Request) -> Option<String> {
     req.url().host().map(|h| h.to_string())
 }
 
-fn port(req: &Request) -> Option<u16> {
+fn server_port(req: &Request) -> Option<u16> {
     req.url().port_or_known_default()
 }
 
-fn status(res: &Result<Response>) -> Option<Cow<'static, str>> {
+fn http_response_status(res: &Result<Response>) -> Option<Cow<'static, str>> {
     return res
         .as_ref()
         .map(|r| Cow::Owned(r.status().as_u16().to_string()))
         .ok();
 }
 
-fn outcome(res: &Result<Response>) -> &'static str {
-    let Ok(res) = res else {
-        return "UNKNOWN";
-    };
-    return match res.status().as_u16() {
-        100..200 => "INFORMATIONAL",
-        200..300 => "SUCCESS",
-        300..400 => "REDIRECTION",
-        400..500 => "CLIENT_ERROR",
-        500..600 => "INFORMATIONAL",
-        _ => "UNKNOWN",
-    };
+fn error_type(res: &Result<Response>) -> Option<Cow<'static, str>> {
+    Some(match res {
+        Ok(res) if res.status().is_client_error() || res.status().is_server_error() => {
+            Cow::Owned(res.status().as_str().to_string())
+        }
+        Err(Error::Middleware(err)) => Cow::Owned(format!("{err}")),
+        Err(Error::Reqwest(err)) => Cow::Owned(format!("{err}")),
+        _ => return None,
+    })
+}
+
+fn network_protocol_version(req: &Request) -> Option<&'static str> {
+    let version = req.version();
+
+    Some(match version {
+        http::Version::HTTP_09 => "0.9",
+        http::Version::HTTP_10 => "1.0",
+        http::Version::HTTP_11 => "1.1",
+        http::Version::HTTP_2 => "2",
+        http::Version::HTTP_3 => "3",
+        _ => return None,
+    })
 }
