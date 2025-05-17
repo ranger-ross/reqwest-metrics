@@ -9,6 +9,8 @@
 # Usage
 
 ```rust
+# use reqwest_middleware::ClientBuilder;
+# use reqwest_metrics::MetricsMiddleware;
 let client = ClientBuilder::new(reqwest::Client::new())
     .with(MetricsMiddleware::new())
     .build();
@@ -19,6 +21,8 @@ let client = ClientBuilder::new(reqwest::Client::new())
 ### Overriding label names
 
 ```rust
+# use reqwest_middleware::ClientBuilder;
+# use reqwest_metrics::MetricsMiddleware;
 let client = ClientBuilder::new(reqwest::Client::new())
     .with(
         MetricsMiddleware::builder()
