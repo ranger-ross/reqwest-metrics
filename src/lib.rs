@@ -59,7 +59,7 @@ This crate is heavily inspired by the [HTTP Client metrics](https://docs.spring.
 
 #![deny(missing_docs)]
 
-use std::{borrow::Cow, time::SystemTime};
+use std::{borrow::Cow, time::Instant};
 
 use http::{Extensions, Method};
 use metrics::histogram;
@@ -228,9 +228,9 @@ impl Middleware for MetricsMiddleware {
         let port = port(&req);
         let uri = uri(&req);
 
-        let start = SystemTime::now();
+        let start = Instant::now();
         let res = next.run(req, extensions).await;
-        let duration = SystemTime::now().duration_since(start).unwrap();
+        let duration = start.elapsed();
 
         let outcome = outcome(&res);
 
