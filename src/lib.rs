@@ -39,6 +39,11 @@ impl MetricsMiddleware {
             label_names: LabelNames::default(),
         }
     }
+
+    /// Create a new [`MetricsMiddlewareBuilder`] to create a customized [`MetricsMiddleware`]
+    pub fn builder() -> MetricsMiddlewareBuilder {
+        MetricsMiddlewareBuilder::new()
+    }
 }
 
 #[derive(Debug, Clone)]
