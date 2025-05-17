@@ -9,33 +9,33 @@ Snapshot(
                 Histogram,
                 Key {
                     name: KeyName(
-                        "http_client_requests_seconds",
+                        "http.client.request.duration",
                     ),
                     labels: [
                         Label(
-                            "my_method",
+                            "method",
                             "GET",
                         ),
                         Label(
-                            "my_outcome",
-                            "SUCCESS",
-                        ),
-                        Label(
-                            "my_scheme",
+                            "scheme",
                             "http",
                         ),
                         Label(
-                            "my_host",
+                            "protocol.version",
+                            "http",
+                        ),
+                        Label(
+                            "host",
                             "127.0.0.1",
                         ),
-                        Label("my_port", [PORT]),
+                        Label("port", [PORT]),
                         Label(
-                            "my_status",
-                            "200",
+                            "network.protocol.version",
+                            "1.1",
                         ),
                         Label(
-                            "my_uri",
-                            "/hello",
+                            "status",
+                            "200",
                         ),
                     ],
                     hashed: true,

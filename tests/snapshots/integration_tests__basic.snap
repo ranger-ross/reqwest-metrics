@@ -9,28 +9,32 @@ Snapshot(
                 Histogram,
                 Key {
                     name: KeyName(
-                        "http_client_requests_seconds",
+                        "http.client.request.duration",
                     ),
                     labels: [
                         Label(
-                            "method",
+                            "http.request.method",
                             "GET",
                         ),
                         Label(
-                            "outcome",
-                            "SUCCESS",
-                        ),
-                        Label(
-                            "scheme",
+                            "url.scheme",
                             "http",
                         ),
                         Label(
-                            "host",
+                            "network.protocol.name",
+                            "http",
+                        ),
+                        Label(
+                            "server.address",
                             "127.0.0.1",
                         ),
-                        Label("port", [PORT]),
+                        Label("server.port", [PORT]),
                         Label(
-                            "status",
+                            "network.protocol.version",
+                            "1.1",
+                        ),
+                        Label(
+                            "http.response.status_code",
                             "200",
                         ),
                     ],

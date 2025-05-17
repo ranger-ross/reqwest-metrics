@@ -16,9 +16,9 @@ async fn main() {
     let client = ClientBuilder::new(reqwest::Client::new())
         .with(
             MetricsMiddleware::builder()
-                .method_label("http_request_method")
-                .status_label("http_response_status")
-                .host_label("http_request_host")
+                .http_request_method_label("method")
+                .http_response_status_label("status")
+                .server_address_label("host")
                 .build(),
         )
         .build();
