@@ -37,6 +37,16 @@ let client = ClientBuilder::new(reqwest::Client::new())
     .build();
 ```
 
+Full list of labels:
+* `client_name`
+* `method`
+* `outcome`
+* `scheme`
+* `host`
+* `port`
+* `status`
+* `uri` (disabled by default)
+
 ### Enabling `uri` label
 
 
