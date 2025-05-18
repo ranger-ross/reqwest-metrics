@@ -1,5 +1,6 @@
 [package]
 name = "reqwest-metrics"
+description = "Metrics.rs integration for reqwest"
 version = "0.1.0"
 authors = ["Ross Sullivan <rosssullivan101@gmail.com>"]
 edition = "2021"
