@@ -36,7 +36,7 @@ let client = ClientBuilder::new(reqwest::Client::new())
     .build();
 ```
 
-Full list of labels:
+Supported labels:
 * `http_request_method`
 * `server_address`
 * `server_port`
