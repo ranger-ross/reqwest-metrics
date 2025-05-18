@@ -76,7 +76,7 @@ const NETWORK_PROTOCOL_VERSION: &str = "network.protocol.version";
 const URL_SCHEME: &str = "url.scheme";
 
 /// Middleware to handle emitting HTTP metrics for a reqwest client
-/// NOTE: Creating a `[MetricMiddleware]` will describe a histgram on construction.
+/// NOTE: Creating a `[MetricMiddleware]` will describe a histogram on construction.
 #[derive(Debug, Clone)]
 pub struct MetricsMiddleware {
     label_names: LabelNames,
