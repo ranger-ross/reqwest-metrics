@@ -200,7 +200,8 @@ impl Default for MetricsMiddlewareBuilder {
     }
 }
 
-#[async_trait::async_trait]
+#[cfg_attr(target_arch = "wasm32", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait::async_trait)]
 impl Middleware for MetricsMiddleware {
     async fn handle(
         &self,
@@ -314,6 +315,12 @@ fn error_type(res: &Result<Response>) -> Option<Cow<'static, str>> {
     })
 }
 
+#[cfg(target_arch = "wasm32")]
+fn network_protocol_version(_req: &Request) -> Option<&'static str> {
+    None
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 fn network_protocol_version(req: &Request) -> Option<&'static str> {
     let version = req.version();
 
