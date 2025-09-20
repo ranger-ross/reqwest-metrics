@@ -31,7 +31,7 @@ jobs:
             nightly: true
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Install ${{ matrix.toolchain }} toolchain
       uses: dtolnay/rust-toolchain@master
@@ -54,3 +54,22 @@ jobs:
 
     - name: Run clippy
       run: cargo clippy --all-targets --all-features
+
+  wasm-build:
+    name: WASM Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install stable toolchain with wasm target
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run build
+        run: cargo build --target=wasm32-unknown-unknown
+
