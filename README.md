@@ -36,6 +36,11 @@ let client = ClientBuilder::new(reqwest::Client::new())
     .build();
 ```
 
+Supported metrics:
+* [`http.client.request.duration`](https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpclientrequestduration)
+* [`http.client.request.body.size`](https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpclientrequestbodysize)
+* [`http.client.response.body.size`](https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpclientresponsebodysize)
+
 Supported labels:
 * `http_request_method`
 * `server_address`

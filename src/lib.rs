@@ -34,6 +34,11 @@ let client = ClientBuilder::new(reqwest::Client::new())
     .build();
 ```
 
+Supported metrics:
+* [`http.client.request.duration`](https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpclientrequestduration)
+* [`http.client.request.body.size`](https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpclientrequestbodysize)
+* [`http.client.response.body.size`](https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpclientresponsebodysize)
+
 Supported labels:
 * `http_request_method`
 * `server_address`
@@ -65,6 +70,8 @@ use reqwest_middleware::{
 // Defaults should follow Open Telemetry when possible
 // https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#http-client
 const HTTP_CLIENT_REQUEST_DURATION: &str = "http.client.request.duration";
+const HTTP_CLIENT_REQUEST_BODY_SIZE: &str = "http.client.request.body.size";
+const HTTP_CLIENT_RESPONSE_BODY_SIZE: &str = "http.client.response.body.size";
 // Labels
 const HTTP_REQUEST_METHOD: &str = "http.request.method";
 const SERVER_ADDRESS: &str = "server.address";
@@ -93,6 +100,16 @@ impl MetricsMiddleware {
             HTTP_CLIENT_REQUEST_DURATION,
             Unit::Seconds,
             "Duration of HTTP client requests."
+        );
+        describe_histogram!(
+            HTTP_CLIENT_REQUEST_BODY_SIZE,
+            Unit::Bytes,
+            "Size of HTTP client request bodies."
+        );
+        describe_histogram!(
+            HTTP_CLIENT_RESPONSE_BODY_SIZE,
+            Unit::Bytes,
+            "Size of HTTP client response bodies."
         );
         Self { label_names }
     }
@@ -214,6 +231,11 @@ impl Middleware for MetricsMiddleware {
         let server_address = server_address(&req);
         let server_port = server_port(&req);
         let network_protocol_version = network_protocol_version(&req);
+        let request_body_size = req
+            .body()
+            .and_then(|body| body.as_bytes())
+            .map(|bytes| bytes.len())
+            .unwrap_or(0);
 
         let start = Instant::now();
         let res = next.run(req, extensions).await;
@@ -262,6 +284,18 @@ impl Middleware for MetricsMiddleware {
 
         histogram!(HTTP_CLIENT_REQUEST_DURATION, &labels)
             .record(duration.as_millis() as f64 / 1000.0);
+
+        histogram!(HTTP_CLIENT_REQUEST_BODY_SIZE, &labels).record(request_body_size as f64);
+
+        // NOTE: The response body size is not *guaranteed* to be in the content-length header, but
+        //       it will be added in nearly all modern HTTP implementations and waiting on the
+        //       response body would be a fairly large performance pentality to force on our users.
+        let response_body_size = res
+            .as_ref()
+            .ok()
+            .and_then(|res| res.content_length())
+            .unwrap_or(0);
+        histogram!(HTTP_CLIENT_RESPONSE_BODY_SIZE, &labels).record(response_body_size as f64);
 
         res
     }

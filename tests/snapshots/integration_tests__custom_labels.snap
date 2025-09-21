@@ -50,5 +50,97 @@ Snapshot(
             ),
             Histogram([HISTOGRAM_VALUE]),
         ),
+        (
+            CompositeKey(
+                Histogram,
+                Key {
+                    name: KeyName(
+                        "http.client.request.body.size",
+                    ),
+                    labels: [
+                        Label(
+                            "method",
+                            "GET",
+                        ),
+                        Label(
+                            "scheme",
+                            "http",
+                        ),
+                        Label(
+                            "protocol.version",
+                            "http",
+                        ),
+                        Label(
+                            "host",
+                            "127.0.0.1",
+                        ),
+                        Label("port", [PORT]),
+                        Label(
+                            "network.protocol.version",
+                            "1.1",
+                        ),
+                        Label(
+                            "status",
+                            "200",
+                        ),
+                    ],
+                    hashed: true,
+                    hash: [HASH],
+                },
+            ),
+            Some(
+                Bytes,
+            ),
+            Some(
+                "Size of HTTP client request bodies.",
+            ),
+            Histogram([HISTOGRAM_VALUE]),
+        ),
+        (
+            CompositeKey(
+                Histogram,
+                Key {
+                    name: KeyName(
+                        "http.client.response.body.size",
+                    ),
+                    labels: [
+                        Label(
+                            "method",
+                            "GET",
+                        ),
+                        Label(
+                            "scheme",
+                            "http",
+                        ),
+                        Label(
+                            "protocol.version",
+                            "http",
+                        ),
+                        Label(
+                            "host",
+                            "127.0.0.1",
+                        ),
+                        Label("port", [PORT]),
+                        Label(
+                            "network.protocol.version",
+                            "1.1",
+                        ),
+                        Label(
+                            "status",
+                            "200",
+                        ),
+                    ],
+                    hashed: true,
+                    hash: [HASH],
+                },
+            ),
+            Some(
+                Bytes,
+            ),
+            Some(
+                "Size of HTTP client response bodies.",
+            ),
+            Histogram([HISTOGRAM_VALUE]),
+        ),
     ],
 )
