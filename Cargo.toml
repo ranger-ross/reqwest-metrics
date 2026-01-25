@@ -10,7 +10,7 @@ readme = "README.md"
 exclude = [".gitignore", ".github/", "examples/"]
 
 [dependencies]
-reqwest-middleware = "0.4"
+reqwest-middleware = "0.5"
 async-trait = "0.1"
 metrics = "0.24"
 http = "1"
@@ -19,7 +19,7 @@ http = "1"
 [dev-dependencies]
 wiremock = "0.6"
 tokio = { version = "1", features = ["full"] }
-metrics-util = "0.19.1"
+metrics-util = "0.20"
 insta = { version = "1.43", features = ["filters"]}
-metrics-exporter-prometheus = "0.17.0"
-reqwest = "0.12"
+metrics-exporter-prometheus = "0.18"
+reqwest = "0.13"
